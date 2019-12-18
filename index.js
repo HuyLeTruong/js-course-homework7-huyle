@@ -37,8 +37,19 @@ var questionController = (function(){
       console.log(displayText);
       return {
         answerLength:questionList[questID].answerSet.answers.length,
-        questionId: questID}
+        questionId: questID,
+        
+         }
     },
+    var getQuestionById = function(questID)
+    {
+      return {
+        
+          quest: questionList[questID].question,
+          answers: questionList[questID].answerSet.answers
+        
+      }
+    }
 
   return {
     // Add a question
@@ -63,17 +74,21 @@ var questionController = (function(){
       if((answerID-1) === questionList[questID].answerSet.correctAnswerId)
       {
         console.log('Your answer is ' + questionList[questID].answerSet.answers[answerID-1]+ ' - Correct!!!');
+        return true;
       }
       else{
         console.log('Your answer is ' + questionList[questID].answerSet.answers[answerID-1]+ ' - Not correct !!!')
+        return false;
       }
     },
 
     // Display Random question   
     getRandomQuestion: function()
     {
-        var questID = Math.floor(Math.random() * questionList.length);        
-        return displayQuestionById(questID);
+        var questID = Math.floor(Math.random() * questionList.length);       displayQuestionById(questID) 
+        var a = getQuestionById(questID);
+        
+        return getQuestionById(questID);
     },
 
     // Display all question in Database
@@ -92,6 +107,40 @@ var questionController = (function(){
 })();
 
 var actionController = (function(){  
+  var domInput = {
+    selectAnswer:"btn-answer",
+    questionText:"question-title",
+    questionContainer:"question-container",
+    correctAnswer:'col-5 btn btn-success btn-answer',  
+    incorrectAnswer:'col-5 btn btn-danger btn-answer',
+    buttonNext: 'btn-next'
+  }
+  var displayQuestionUI = function(questObj)
+  {    
+    var htmlQuest= "<div class='question-containter' id='question-%questID%'> <div class='question-title'>  <h5 ><span class='badge badge-info'>%questText%</span></h5></div><div class='answersSet'> %htmlAnswer%</div>"
+    var htmlAnswer = "<button class='col-5 btn btn-light btn-answer' style='text-align:left' type='button' id='answer-%questID%-%answerID%' >%answerText%</buttons> "
+
+    var tempAnswerHtml ='';
+
+    if(questObj !== undefined && questObj !== {})
+    {
+      for(var i = 0;i<questObj.answers.length;i++)
+      {
+       var tempHTML = htmlAnswer+'';
+       tempHTML=tempHTML.replace('%questID%',questObj.quest.id).replace('%answerID%',i+1).replace('%answerText%',(i+1)+'. '+questObj.answers[i]);
+       tempAnswerHtml +=tempHTML;
+      }
+
+      htmlQuest=htmlQuest.replace('%questID%',questObj.quest.id).replace('%questText%',questObj.quest.id+1 + '. '+questObj.quest.text).replace('%htmlAnswer%',tempAnswerHtml);
+      
+      
+    }
+    // document.getElementById(domInput.questionContainer).insertAdjacentHTML('beforeend', htmlQuest);
+    document.getElementById(domInput.questionContainer).innerHTML=(htmlQuest);
+  }
+
+
+
   // 1. Select answer
   return{
     selectAnswer: function(answerLength){
@@ -102,6 +151,11 @@ var actionController = (function(){
       
       return input;
     },
+    displayQuestionUI : function(questObj)
+    {
+      return displayQuestionUI(questObj);
+    },
+    domInput
   }
 })();
 
@@ -110,16 +164,32 @@ var controller = (function(questCtr,actCtr){
   var checkAnswer = function(answerObject)
   {
     var answerID = answerObject.id;
-    answerID = answerID.replace("answer-",'')
-    answerID = answerID.split('-');    
-    questCtr.checkAnswer(answerID[0],answerID[1]);    
+    var id = answerID.replace("answer-",'')
+    id = id.split('-');    
+    
+    if(questCtr.checkAnswer(id[0],id[1]) === true)
+    {
+     document.getElementById(answerID).className = actCtr.domInput.correctAnswer;
+     document.getElementById(answerID).disabled = true;
+     
+    }else{
+      document.getElementById(answerID).className = actCtr.domInput.incorrectAnswer;
+      document.getElementById(answerID).disabled = true;
+    };    
   }
 
-  var setupEventListeners =  function(){   
+  var setupEventListeners =  function(){
+    document.getElementById('btn-next').addEventListener('click',function(){
+      var q = questCtr.getRandomQuestion();
+    
+    actCtr.displayQuestionUI(q);
+    setupEventListeners();
+    })   
       var DOM = document.getElementsByClassName("btn-answer");
       Array.prototype.forEach.call(DOM, function(dom) {
         dom.addEventListener('click',function(){
-          console.log(checkAnswer(dom))
+            checkAnswer(dom)
+            
         })
       });
 
@@ -130,10 +200,11 @@ return{
   init:function(){    
     console.log('Application has started - We have '+questCtr.getQuestionLength()+' questions in Database');
     console.log('Geting a random question..................');
-    setupEventListeners();
+    
     var q = questCtr.getRandomQuestion();
     
-    
+    actCtr.displayQuestionUI(q);
+    setupEventListeners();
     //var a = actCtr.selectAnswer();
     
     //setTimeout(questionController.checkAnswer(q.questionId,a), 1000000);
