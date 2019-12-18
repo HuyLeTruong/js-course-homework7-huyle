@@ -1,0 +1,10 @@
+@import '~bootstrap/dist/css/bootstrap.min.css';
+
+h1, h2 {
+  font-family: Lato;
+}
+ul {
+  splay: block;
+  list-style-type:none;
+ 
+}
